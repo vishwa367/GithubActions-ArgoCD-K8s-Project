@@ -49,6 +49,14 @@ jobs:
             - name: Create ArgoCD Application
               run: kubectl apply -f argocd/application.yaml
 
+            - name: Wait for Deployment to appear
+              run: |
+                for i in {1..60}; do
+                  kubectl get deployment demo-app -n demo && break
+                  echo "Waiting for deployment demo-app..."
+                  sleep 5
+                done
+
             - name: Wait for Application deployment
               run: kubectl wait --for=condition=available --timeout=300s deployment/demo-app -n demo
 
