@@ -67,6 +67,16 @@ jobs:
                 kubectl describe svc -n demo
                 sleep 10
 
+            - name: Wait for Service to appear
+              run: |
+                for i in {1..60}; do
+                  kubectl get svc demo-app-service -n demo && exit 0
+                  echo "Waiting for service demo-app-service..."
+                  sleep 5
+                done
+                echo "Service was not created"
+                exit 1
+
             - name: Test Application inside Cluster
               run: |
                 kubectl run curl-test \
