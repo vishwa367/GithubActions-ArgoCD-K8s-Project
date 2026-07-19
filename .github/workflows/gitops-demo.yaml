@@ -1,0 +1,66 @@
+name: Github-Actions ArgoCD Kubernetes Project
+
+on:
+    push:
+        branches:
+          - main
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    gitops-demo:
+        name: Build and Deploy using ArgoCD
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Repository
+              uses: actions/checkout@v6
+            
+            - name: Setup Docker Buildx
+              uses: docker/setup-buildx-action@v4
+
+            - name: Build Docker Image
+              run: docker build -t demo-app:local .
+
+            - name: Create Kind Kubernetes Cluster
+              uses: helm/kind-action@v1
+
+            - name: Load Docker Image into Kind
+              run: kind load docker-image demo-app:local
+
+            - name: Verify Kubernetes Cluster
+              run: |
+                kubectl cluster-info
+                kubectl get nodes
+
+            - name: Install ArgoCD
+              run: |
+                kubectl create namespace argocd
+                kubectl apply -n argocd --service-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+            - name: Wait for ArgoCD Pods
+              run: |
+                kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+                kubectl wait --for=condition=available --timeout=300s deployment/argocd-repo-server -n argocd
+                kubectl wait --for=condition=available --timeout=300s deployment/argocd-applicationset-controller -n argocd
+            
+            - name: Create ArgoCD Application
+              run: kubectl apply -f argocd/application.yaml
+
+            - name: Wait for Application deployment
+              run: kubectl wait --for=condition=available --timeout=300s deployment/demo-app -n demo
+
+            - name: Show Kubernetes Resources
+              run: |
+                kubectl get all -n demo
+                kubectl get applications -n argocd
+
+            - name: Test Application inside Cluster
+              run: |
+                kubectl run curl-test \
+                  --image=curlimages/curl:8.8.0 \
+                  --rm -i --restart=Never \
+                  -n demo \
+                  -- curl -s http://demo-app-service.demo.svc.cluster.local
