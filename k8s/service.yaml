@@ -4,7 +4,7 @@ metadata:
   name: demo-app-service
   namespace: demo
 spec:
-  type: Cluster-IP
+  type: ClusterIP
   selector:
     app: demo-app
   ports:

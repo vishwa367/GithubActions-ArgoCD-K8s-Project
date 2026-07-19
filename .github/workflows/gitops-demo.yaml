@@ -63,7 +63,9 @@ jobs:
             - name: Show Kubernetes Resources
               run: |
                 kubectl get all -n demo
+                kubectl get svc -n demo
                 kubectl get applications -n argocd
+                kubectl describe application demo-app -n argocd || true
 
             - name: Test Application inside Cluster
               run: |
