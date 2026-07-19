@@ -28,7 +28,7 @@ jobs:
               uses: helm/kind-action@v1
 
             - name: Load Docker Image into Kind
-              run: chart-testing load docker-image demo-app:local
+              run: kind load docker-image demo-app:local --name chart-testing
 
             - name: Verify Kubernetes Cluster
               run: |
